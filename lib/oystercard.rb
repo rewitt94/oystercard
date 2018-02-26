@@ -6,8 +6,9 @@ BALANCE_LIMIT = 90
     @balance = initial_balance
   end
 
-  def top_up(amount)
-    raise "max balance is #{BALANCE_LIMIT}" if (@balance + amount) > BALANCE_LIMIT 
+  def transaction(amount)
+    raise "max balance is #{BALANCE_LIMIT}" if (@balance + amount) > BALANCE_LIMIT
+    raise "insufficient funds: current balance is #{@balance}" if (@balance + amount) < 0
     @balance += amount
   end
 
