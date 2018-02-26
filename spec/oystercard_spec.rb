@@ -31,6 +31,10 @@ describe Oystercard do
       expect(subject.balance).to eq(10)
     end
 
+    it 'throws a wobbly if you try to exceed balance limit' do
+      expect { subject.top_up(91) }.to raise_error "max balance is #{Oystercard::BALANCE_LIMIT}"
+    end
+
   end
 
 end
