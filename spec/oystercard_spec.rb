@@ -1,48 +1,79 @@
 require 'oystercard'
 
 describe Oystercard do
-  subject(:oystercard) { Oystercard.new }
+  context 'Oystercard starts with balance 40 - unless stated otherwise' do
+    subject(:oystercard) { Oystercard.new(40) }
 
-  describe 'creation of Oystercards' do
+    describe 'creation of Oystercards' do
 
-    context 'created without parameter' do
+      context 'created without parameter' do
+        subject(:oystercard) { Oystercard.new }
 
-      it 'default balance is 0' do
-        expect(subject.balance).to eq(0)
+        it 'default balance is 0' do
+          expect(subject.balance).to eq(0)
+        end
+
+      end
+
+      context 'created with parameter' do
+        subject(:oystercard) { Oystercard.new(20) }
+
+        it 'sets parameter to balance' do
+          expect(subject.balance).to eq(20)
+        end
+
       end
 
     end
 
-    context 'created with parameter' do
-      subject(:oystercard) { Oystercard.new(20) }
+    describe '#transaction' do
 
-      it 'sets parameter to balance' do
+      it 'adds to balance using positive parameter' do
+        subject.transaction(10)
+        expect(subject.balance).to eq(50)
+      end
+
+      it 'subtract from balance using negative parameter' do
+        subject.transaction(-20)
         expect(subject.balance).to eq(20)
       end
 
+      it 'cannot exceed balance limit' do
+        expect { subject.transaction(91) }.to raise_error "max balance is #{Oystercard::BALANCE_LIMIT}"
+      end
+
+      it 'cannot make a transaction with insufficient funds' do
+        expect { subject.transaction(-41) }.to raise_error "insufficient funds: current balance is #{subject.balance}"
+      end
+
     end
 
-  end
+    describe '#in_journey?' do
 
-  describe '#transaction' do
+      it 'should default to false' do
+        expect(subject.in_journey?).to be_falsey
+      end
 
-    it 'adds to balance' do
-      subject.transaction(30)
-      expect(subject.balance).to eq(30)
-    end
+      describe '#touch_in' do
+        it 'changes #in_journey? from false to true' do
+          expect{ subject.touch_in }.to change{ subject.in_journey? }.from(false).to(true)
+        end
 
-    it 'subtract from balance #assuming adds to balance works' do
-      subject.transaction(30)
-      subject.transaction(-10)
-      expect(subject.balance).to eq(20)
-    end
+        it 'no change if already in journey' do
+          subject.touch_in
+          expect{ subject.touch_in }.not_to change{ subject.in_journey? }
+        end
 
-    it 'throws a wobbly if you try to exceed balance limit' do
-      expect { subject.transaction(91) }.to raise_error "max balance is #{Oystercard::BALANCE_LIMIT}"
-    end
+      end
 
-    it 'cannot make a transaction with insufficient funds' do
-      expect { subject.transaction(-1) }.to raise_error "insufficient funds: current balance is #{subject.balance}"
+      describe '#touch_out' do
+        it 'changes #in_journey? from true to false' do
+          subject.touch_in
+          expect{ subject.touch_out }.to change{ subject.in_journey? }.from(true).to(false)
+        end
+
+      end
+
     end
 
   end
