@@ -1,12 +1,17 @@
 require 'oystercard'
 
 describe Oystercard do
+
   context 'Oystercard starts with balance 40 - unless stated otherwise' do
     subject(:oystercard) { Oystercard.new(40) }
+    let(:entry_station) { double('entry_station') }
+    let(:exit_station) { double('exit_station')}
 
     describe 'creation of Oystercards' do
 
-      context 'created without parameter' do
+
+
+      context '#new without parameter' do
         subject(:oystercard) { Oystercard.new }
 
         it 'default balance is 0' do
@@ -15,7 +20,7 @@ describe Oystercard do
 
       end
 
-      context 'created with parameter' do
+      context '#new with parameter' do
         subject(:oystercard) { Oystercard.new(20) }
 
         it 'sets parameter to balance' do
@@ -26,29 +31,23 @@ describe Oystercard do
 
     end
 
-    describe '#transaction' do
+    describe 'transactions' do
 
-      it 'adds to balance using positive parameter' do
-        subject.transaction(10)
-        expect(subject.balance).to eq(50)
+      describe '#top_up' do
+        it 'adds to balance using positive parameter' do
+          expect{ subject.top_up(10) }.to change{ subject.balance }.by(10)
+        end
       end
 
-      it 'subtract from balance using negative parameter' do
-        subject.transaction(-20)
-        expect(subject.balance).to eq(20)
-      end
-
-      it 'cannot exceed balance limit' do
-        expect { subject.transaction(91) }.to raise_error "max balance is #{Oystercard::BALANCE_LIMIT}"
-      end
-
-      it 'cannot make a transaction with insufficient funds' do
-        expect { subject.transaction(-41) }.to raise_error "insufficient funds: current balance is #{subject.balance}"
+      describe '#touch_out' do
+        it 'reduces your balance by minimum fare' do
+          expect{ subject.touch_out(:exit_station) }.to change{ subject.balance }.by(-Oystercard::MINIMUM_FARE)
+        end
       end
 
     end
 
-    describe '#in_journey?' do
+    describe 'in_journey? predicate' do
 
       it 'should default to false' do
         expect(subject.in_journey?).to be_falsey
@@ -56,22 +55,80 @@ describe Oystercard do
 
       describe '#touch_in' do
         it 'changes #in_journey? from false to true' do
-          expect{ subject.touch_in }.to change{ subject.in_journey? }.from(false).to(true)
+          expect{ subject.touch_in(:entry_station) }.to change{ subject.in_journey? }.from(false).to(true)
         end
 
         it 'no change if already in journey' do
-          subject.touch_in
-          expect{ subject.touch_in }.not_to change{ subject.in_journey? }
+          subject.touch_in(:entry_station)
+          expect{ subject.touch_in(:entry_station) }.not_to change{ subject.in_journey? }
         end
 
       end
 
       describe '#touch_out' do
         it 'changes #in_journey? from true to false' do
-          subject.touch_in
-          expect{ subject.touch_out }.to change{ subject.in_journey? }.from(true).to(false)
+          subject.touch_in(:entry_station)
+          expect{ subject.touch_out(:exit_station) }.to change{ subject.in_journey? }.from(true).to(false)
         end
 
+      end
+
+    end
+
+    describe 'balance errors' do
+
+      describe '#top_up' do
+
+        it 'cannot exceed balance limit' do
+          expect{ subject.top_up(91) }.to raise_error "max balance is #{Oystercard::BALANCE_LIMIT}"
+        end
+
+        # it 'cannot make a transaction with insufficient funds' do
+        #   expect { subject.transaction(-41) }.to raise_error "insufficient funds: current balance is #{subject.balance}"
+        # end
+      end
+
+      describe '#touch_in' do
+        subject(:oystercard) { Oystercard.new(Oystercard::TOUCH_IN_MINIMUM - 0.01) }
+
+        it 'cannot touch in with balance less than one' do
+          expect{ subject.touch_in(:entry_station) }.to raise_error("touch in mimimum is #{Oystercard::TOUCH_IN_MINIMUM}")
+        end
+
+      end
+
+    end
+
+    describe 'entry station attribute' do
+
+      describe '#touch_in' do
+        it 'store entry station upon touch in' do
+          expect{ subject.touch_in(:entry_station) }.to change{ subject.entry_station }.from(nil).to(:entry_station)
+        end
+      end
+
+      describe '#touch_out' do
+        it 'deletes entry station upon touch out' do
+          subject.touch_in(:entry_station)
+          expect{ subject.touch_out(:exit_station) }.to change{ subject.entry_station }.from(:entry_station).to(nil)
+        end
+      end
+
+    end
+
+    describe 'journeys attribute' do
+
+      describe '#new' do
+        it 'journeys is empty by default' do
+          expect(subject.journeys.empty?).to be_truthy
+        end
+      end
+
+      describe '#touch_out' do
+        it 'adds a journey to journeys' do
+          subject.touch_in(:entry_station)
+          expect{ subject.touch_out(:exit_station) }.to change{ subject.journeys.empty? }.from(true).to(false)
+        end
       end
 
     end
