@@ -1,3 +1,5 @@
+require_relative 'journey_log.rb'
+
 class Oystercard
   attr_reader :balance, :entry_station
   attr_accessor :journeys
@@ -5,10 +7,11 @@ class Oystercard
   TOUCH_IN_MINIMUM = 1
   MINIMUM_FARE = 2
 
-  def initialize(initial_balance = 0)
+  def initialize(journeylog = JourneyLog.new, initial_balance = 0)
     @balance = initial_balance
     @entry_station = nil
-    @journeys = []
+    @journeys = journeylog
+
   end
 
   def top_up(amount)
@@ -22,7 +25,7 @@ class Oystercard
   end
 
   def touch_out(exit_station)
-    @journeys.push({entry: @entry_station, exit: exit_station})
+    @journeys.add_journey({entry: @entry_station, exit: exit_station})
     deduct(MINIMUM_FARE)
     @entry_station = nil
   end

@@ -3,16 +3,26 @@ require 'oystercard'
 describe Oystercard do
 
   context 'Oystercard starts with balance 40 - unless stated otherwise' do
-    subject(:oystercard) { Oystercard.new(40) }
     let(:entry_station) { double('entry_station') }
     let(:exit_station) { double('exit_station')}
+    let(:journey_log) { double :journey_log, add_journey: nil }
+    # allow(:journey_log).to_receive(:add_journey).with('an argument')
+    subject(:oystercard) { Oystercard.new(journey_log, 40) }
 
     describe 'creation of Oystercards' do
 
+      context '#new with first parameter set' do
+        subject(:oystercard) { Oystercard.new(:test, 40) }
+
+        it 'first parameter is injected to journeys' do
+          expect(subject.journeys).to eq(:test)
+        end
+      end
 
 
-      context '#new without parameter' do
-        subject(:oystercard) { Oystercard.new }
+
+      context '#new without second parameter' do
+        subject(:oystercard) { Oystercard.new(:journey_log) }
 
         it 'default balance is 0' do
           expect(subject.balance).to eq(0)
@@ -20,14 +30,16 @@ describe Oystercard do
 
       end
 
-      context '#new with parameter' do
-        subject(:oystercard) { Oystercard.new(20) }
+      context '#new with second parameter' do
+        subject(:oystercard) { Oystercard.new(:journey_log, 20) }
 
         it 'sets parameter to balance' do
           expect(subject.balance).to eq(20)
         end
 
       end
+
+
 
     end
 
@@ -117,12 +129,6 @@ describe Oystercard do
     end
 
     describe 'journeys attribute' do
-
-      describe '#new' do
-        it 'journeys is empty by default' do
-          expect(subject.journeys.empty?).to be_truthy
-        end
-      end
 
       describe '#touch_out' do
         it 'adds a journey to journeys' do
